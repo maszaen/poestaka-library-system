@@ -134,8 +134,9 @@ export function ItemSearchDropdown({
           />
         </div>
         <Button 
-          type="button" 
+          type="button"
           variant="outline" 
+          className={`${disabled ? 'cursor-default' : 'cursor-pointer'}`}
           onClick={handleAddManual}
           disabled={disabled || !query.trim()}
         >

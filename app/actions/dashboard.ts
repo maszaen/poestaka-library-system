@@ -80,3 +80,37 @@ export async function getPopularBooks(): Promise<PopularBook[]> {
     return [];
   }
 }
+
+export interface FinancialStats {
+  totalDenda: number;
+  avgLoanDuration: number;
+}
+
+export async function getFinancialStats(): Promise<FinancialStats> {
+  try {
+    interface FinancialRow extends RowDataPacket {
+      total_denda: number | null;
+      avg_loan_duration: number | null;
+    }
+
+    const [result] = await query<FinancialRow[]>(`
+      SELECT 
+        SUM(dp.denda) as total_denda,
+        AVG(DATEDIFF(dp.tanggal_kembali_aktual, p.tanggal_pinjam)) as avg_loan_duration
+      FROM detail_peminjaman dp
+      JOIN peminjaman p ON dp.no_peminjaman = p.no_peminjaman
+      WHERE dp.status_kembali IN ('Kembali', 'Hilang')
+    `);
+
+    return {
+      totalDenda: Number(result?.total_denda) || 0,
+      avgLoanDuration: Math.round(Number(result?.avg_loan_duration)) || 0,
+    };
+  } catch (error) {
+    console.error('Error fetching financial stats:', error);
+    return {
+      totalDenda: 0,
+      avgLoanDuration: 0,
+    };
+  }
+}

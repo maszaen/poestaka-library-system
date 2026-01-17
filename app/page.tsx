@@ -1,4 +1,4 @@
-import { getDashboardStats, getPopularBooks } from "@/app/actions/dashboard";
+import { getDashboardStats, getPopularBooks, getFinancialStats } from "@/app/actions/dashboard";
 import { getActiveLoans } from "@/app/actions/circulation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BookOpen, Package, ArrowLeftRight, Users, AlertCircle } from "lucide-react";
+import { BookOpen, Package, ArrowLeftRight, Users, AlertCircle, Coins, Clock } from "lucide-react";
 import { formatDate, calculateLateDays, formatCurrency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +20,7 @@ export default async function DashboardPage() {
   const stats = await getDashboardStats();
   const activeLoans = await getActiveLoans();
   const popularBooks = await getPopularBooks();
+  const financialStats = await getFinancialStats();
 
   const statCards = [
     {
@@ -50,6 +51,21 @@ export default async function DashboardPage() {
       color: "text-purple-600",
       bgColor: "bg-purple-50",
     },
+    {
+      title: "Total Denda Masuk",
+      value: formatCurrency(financialStats.totalDenda),
+      icon: Coins,
+      color: "text-rose-600",
+      bgColor: "bg-rose-50",
+      isCurrency: true
+    },
+    {
+      title: "Avg. Lama Pinjam",
+      value: `${financialStats.avgLoanDuration} Hari`,
+      icon: Clock,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50",
+    }
   ];
 
   // Identify overdue loans
@@ -65,7 +81,7 @@ export default async function DashboardPage() {
       />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {statCards.map((stat) => (
           <Card key={stat.title} className="relative overflow-hidden">
             <CardContent className="p-6">
@@ -74,12 +90,12 @@ export default async function DashboardPage() {
                   <p className="text-sm font-medium text-[#4B5563]">
                     {stat.title}
                   </p>
-                  <p className="mt-2 text-3xl font-bold text-[#111827]">
-                    {stat.value.toLocaleString("id-ID")}
+                  <p className="mt-2 text-2xl font-bold text-[#111827]">
+                    {stat.isCurrency ? stat.value : stat.value.toLocaleString("id-ID")}
                   </p>
                 </div>
                 <div className={`rounded-full p-3 ${stat.bgColor}`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                  <stat.icon className={`h-5 w-5 ${stat.color}`} />
                 </div>
               </div>
             </CardContent>

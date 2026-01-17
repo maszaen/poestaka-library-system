@@ -28,7 +28,7 @@ export default function RootLayout({
           
           {/* Main Content Area */}
           <main className="ml-64 flex-1 overflow-auto bg-[#F9FAFB]">
-            <div className="min-h-screen p-8">
+            <div className="min-h-screen p-8 max-w-5xl mx-auto">
               {children}
             </div>
           </main>

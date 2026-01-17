@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { searchMemberByIdentity } from "@/app/actions/members";
+import { useBorrowForm } from "@/contexts/borrow-form-context";
 import { processLoan } from "@/app/actions/circulation";
-import { Anggota } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { MemberSearchDropdown } from "@/components/member-search-dropdown";
+import { ItemSearchDropdown } from "@/components/item-search-dropdown";
 import {
   User,
   Barcode,
@@ -19,66 +20,14 @@ import {
 } from "lucide-react";
 
 export function BorrowTab() {
-  const [memberIdInput, setMemberIdInput] = useState("");
-  const [member, setMember] = useState<Anggota | null>(null);
-  const [isSearchingMember, setIsSearchingMember] = useState(false);
-  const [memberError, setMemberError] = useState<string | null>(null);
-
-  const [barcodeInput, setBarcodeInput] = useState("");
-  const [itemBarcodes, setItemBarcodes] = useState<string[]>([]);
+  const { formState, setMember, addBarcode, removeBarcode, resetForm } = useBorrowForm();
+  const { member, itemBarcodes } = formState;
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<{
     success: boolean;
     message: string;
   } | null>(null);
-
-  const handleSearchMember = useCallback(async () => {
-    if (!memberIdInput.trim()) return;
-    
-    setIsSearchingMember(true);
-    setMemberError(null);
-    setMember(null);
-
-    try {
-      const found = await searchMemberByIdentity(memberIdInput.trim());
-      if (found) {
-        setMember(found);
-      } else {
-        setMemberError("Anggota tidak ditemukan");
-      }
-    } catch {
-      setMemberError("Gagal mencari anggota");
-    } finally {
-      setIsSearchingMember(false);
-    }
-  }, [memberIdInput]);
-
-  const handleAddBarcode = useCallback(() => {
-    const barcode = barcodeInput.trim();
-    if (!barcode) return;
-
-    if (itemBarcodes.includes(barcode)) {
-      return; // Already added
-    }
-
-    setItemBarcodes((prev) => [...prev, barcode]);
-    setBarcodeInput("");
-  }, [barcodeInput, itemBarcodes]);
-
-  const handleRemoveBarcode = useCallback((barcode: string) => {
-    setItemBarcodes((prev) => prev.filter((b) => b !== barcode));
-  }, []);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        handleAddBarcode();
-      }
-    },
-    [handleAddBarcode]
-  );
 
   const handleSubmit = async () => {
     if (!member || itemBarcodes.length === 0) return;
@@ -94,10 +43,8 @@ export function BorrowTab() {
           success: true,
           message: `Peminjaman berhasil! No: ${response.data?.no_peminjaman}`,
         });
-        // Reset form
-        setMember(null);
-        setMemberIdInput("");
-        setItemBarcodes([]);
+        // Reset form after success
+        resetForm();
       } else {
         setResult({
           success: false,
@@ -115,11 +62,8 @@ export function BorrowTab() {
   };
 
   const handleReset = () => {
-    setMember(null);
-    setMemberIdInput("");
-    setItemBarcodes([]);
+    resetForm();
     setResult(null);
-    setMemberError(null);
   };
 
   return (
@@ -134,62 +78,12 @@ export function BorrowTab() {
               Informasi Anggota
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Masukkan Nomor Identitas"
-                value={memberIdInput}
-                onChange={(e) => setMemberIdInput(e.target.value)}
-                onBlur={handleSearchMember}
-                onKeyDown={(e) => e.key === "Enter" && handleSearchMember()}
-                disabled={isSearchingMember || !!member}
-              />
-              {member && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    setMember(null);
-                    setMemberIdInput("");
-                    setMemberError(null);
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-
-            {isSearchingMember && (
-              <div className="flex items-center gap-2 text-sm text-[#4B5563]">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Mencari anggota...
-              </div>
-            )}
-
-            {memberError && (
-              <p className="text-sm text-red-600">{memberError}</p>
-            )}
-
-            {member && (
-              <div className="rounded-md border border-green-200 bg-green-50 p-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span className="font-medium text-green-800">
-                    Anggota Ditemukan
-                  </span>
-                </div>
-                <div className="mt-2 space-y-1 text-sm">
-                  <p>
-                    <span className="text-[#4B5563]">Nama:</span>{" "}
-                    <span className="font-medium">{member.nama_lengkap}</span>
-                  </p>
-                  <p>
-                    <span className="text-[#4B5563]">No. Identitas:</span>{" "}
-                    <span className="font-mono">{member.nomor_identitas}</span>
-                  </p>
-                </div>
-              </div>
-            )}
+          <CardContent>
+            <MemberSearchDropdown
+              value={member}
+              onChange={setMember}
+              disabled={isProcessing}
+            />
           </CardContent>
         </Card>
 
@@ -202,17 +96,11 @@ export function BorrowTab() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Scan atau masukkan barcode item"
-                value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-              />
-              <Button variant="outline" onClick={handleAddBarcode}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
+            <ItemSearchDropdown 
+              onSelect={addBarcode} 
+              excludeIds={itemBarcodes}
+              disabled={isProcessing}
+            />
 
             {itemBarcodes.length > 0 && (
               <div className="flex flex-wrap gap-2">
@@ -224,8 +112,9 @@ export function BorrowTab() {
                   >
                     <span className="font-mono">{barcode}</span>
                     <button
-                      onClick={() => handleRemoveBarcode(barcode)}
+                      onClick={() => removeBarcode(barcode)}
                       className="ml-1 rounded-full p-0.5 hover:bg-gray-200"
+                      disabled={isProcessing}
                     >
                       <X className="h-3 w-3" />
                     </button>

@@ -66,6 +66,52 @@ export async function searchMemberByIdentity(nomor_identitas: string): Promise<A
   }
 }
 
+// Search members by name or identity (for dropdown)
+export async function searchMembers(keyword: string = "", limit: number = 20): Promise<Anggota[]> {
+  try {
+    console.log("[DEBUG] searchMembers called with keyword:", keyword);
+    
+    // Debug: Return ALL members without limit param to test simple query
+    if (!keyword.trim()) {
+      const members = await query<AnggotaRow[]>(`
+        SELECT 
+          id_anggota,
+          nomor_identitas,
+          nama_lengkap,
+          no_telepon,
+          alamat,
+          tanggal_daftar
+        FROM anggota
+        LIMIT 50
+      `);
+      console.log("[DEBUG] Found members (no keyword):", members.length);
+      return members;
+    }
+
+    // Debug: Standard search but log results
+    const searchPattern = `%${keyword.trim()}%`;
+    const members = await query<AnggotaRow[]>(`
+      SELECT 
+        id_anggota,
+        nomor_identitas,
+        nama_lengkap,
+        no_telepon,
+        alamat,
+        tanggal_daftar
+      FROM anggota
+      WHERE nama_lengkap LIKE ? OR nomor_identitas LIKE ?
+      ORDER BY nama_lengkap ASC
+      LIMIT 20
+    `, [searchPattern, searchPattern]);
+    
+    console.log("[DEBUG] Found members (with keyword):", members.length);
+    return members;
+  } catch (error) {
+    console.error('[DEBUG] Error searching members:', error);
+    return [];
+  }
+}
+
 export async function createMember(data: {
   nomor_identitas: string;
   nama_lengkap: string;

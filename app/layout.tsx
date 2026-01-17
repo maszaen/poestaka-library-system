@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Sidebar, MobileHeader } from "@/components/layout/sidebar";
+import { BorrowFormProvider } from "@/contexts/borrow-form-context";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({
@@ -60,7 +61,9 @@ export default function RootLayout({
             )}
           >
             <div className="min-h-screen p-4 lg:p-8 max-w-5xl mx-auto">
-              {children}
+              <BorrowFormProvider>
+                {children}
+              </BorrowFormProvider>
             </div>
           </main>
         </div>

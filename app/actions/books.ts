@@ -134,3 +134,55 @@ export async function createBookItem(data: {
     return { success: false, error: 'Gagal menambahkan item buku' };
   }
 }
+
+// Search available items for borrowing (for dropdown)
+export async function searchAvailableItems(keyword: string = "", limit: number = 20): Promise<{
+  id_item: string;
+  judul: string;
+  penulis: string | null;
+}[]> {
+  try {
+    interface ItemWithBookRow extends RowDataPacket {
+      id_item: string;
+      judul: string;
+      penulis: string | null;
+    }
+
+    console.log("[DEBUG] searchAvailableItems called with keyword:", keyword);
+
+    if (!keyword.trim()) {
+      const items = await query<ItemWithBookRow[]>(`
+        SELECT 
+          i.id_item,
+          b.judul,
+          b.penulis
+        FROM item_buku i
+        JOIN buku b ON i.id_buku = b.id_buku
+        WHERE i.status = 'Tersedia'
+        LIMIT 50
+      `);
+      console.log("[DEBUG] Found items (no keyword):", items.length);
+      return items;
+    }
+
+    const searchPattern = `%${keyword.trim()}%`;
+    const items = await query<ItemWithBookRow[]>(`
+      SELECT 
+        i.id_item,
+        b.judul,
+        b.penulis
+      FROM item_buku i
+      JOIN buku b ON i.id_buku = b.id_buku
+      WHERE i.status = 'Tersedia' AND (i.id_item LIKE ? OR b.judul LIKE ?)
+      ORDER BY b.judul ASC, i.id_item ASC
+      LIMIT 20
+    `, [searchPattern, searchPattern]);
+    
+    console.log("[DEBUG] Found items (with keyword):", items.length);
+    return items;
+  } catch (error) {
+    console.error('[DEBUG] Error searching available items:', error);
+    return [];
+  }
+}
+

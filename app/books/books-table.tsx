@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BukuWithKategori, ItemBuku, Kategori } from "@/lib/types";
 import { getBookItems } from "@/app/actions/books";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CategorySearchDropdown } from "@/components/category-search-dropdown";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BookOpen, Eye, Search, Package, Filter } from "lucide-react";
+import { BookOpen, Eye, Search, Package } from "lucide-react";
 
 interface BooksTableProps {
   books: BukuWithKategori[];
@@ -34,43 +35,71 @@ export function BooksTable({ books, categories }: BooksTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "all");
+  // Initialize state from URL params
+  const initialSearch = searchParams.get("search") || "";
+  const initialCategory = searchParams.get("category") || "all";
   
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  
+  // Update local state when URL params change (e.g. navigation back/forward)
+  useEffect(() => {
+    setSearchQuery(searchParams.get("search") || "");
+    setSelectedCategory(searchParams.get("category") || "all");
+  }, [searchParams]);
+
   const [selectedBook, setSelectedBook] = useState<BukuWithKategori | null>(null);
   const [bookItems, setBookItems] = useState<ItemBuku[]>([]);
   const [isLoadingItems, setIsLoadingItems] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  // Custom Debounce for Search
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Debounced search update
-  useEffect(() => {
-    const timer = setTimeout(() => {
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
-      
-      if (searchQuery) {
-        params.set("search", searchQuery);
+      if (value) {
+        params.set("search", value);
       } else {
         params.delete("search");
       }
       
-      router.push(`/books?${params.toString()}`);
+      // Keep category if exists
+      if (selectedCategory && selectedCategory !== 'all') {
+        params.set("category", selectedCategory);
+      }
+      
+      router.push(`/books?${params.toString()}`, { scroll: false });
     }, 500);
+  };
 
-    return () => clearTimeout(timer);
-  }, [searchQuery, router]); // Intentionally omitting searchParams to avoid loop if possible, but params update triggers fetch
-
-  const handleCategoryChange = (value: string) => {
-    setSelectedCategory(value);
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    
     const params = new URLSearchParams(searchParams.toString());
-    if (value && value !== "all") {
-      params.set("category", value);
+    
+    if (categoryId && categoryId !== "all") {
+      params.set("category", categoryId);
     } else {
       params.delete("category");
     }
-    router.push(`/books?${params.toString()}`);
+    
+    // Keep search query if exists
+    if (searchQuery) {
+      params.set("search", searchQuery);
+    }
+    
+    router.push(`/books?${params.toString()}`, { scroll: false });
   };
-
-  // We use books directly as they are already filtered by the server
+  
+  // Use books directly (server filtered)
   const filteredBooks = books;
 
   const handleViewStock = async (book: BukuWithKategori) => {
@@ -121,32 +150,22 @@ export function BooksTable({ books, categories }: BooksTableProps) {
     <>
       {/* Search and Filter */}
       <Card className="mb-6">
-        <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
+        <CardContent className="p-1 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input
               placeholder="Cari judul, penulis, atau ISBN..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10"
             />
           </div>
-          <div className="relative">
-             <div className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 pointer-events-none z-10">
-                <Filter className="h-4 w-4" />
-             </div>
-             <select 
-                value={selectedCategory}
-                onChange={(e) => handleCategoryChange(e.target.value)}
-                className="h-10 w-full sm:w-[200px] rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
-             >
-                <option value="all">Semua Kategori</option>
-                {categories.map((cat) => (
-                   <option key={cat.id_kategori} value={cat.id_kategori}>
-                      {cat.nama_kategori}
-                   </option>
-                ))}
-             </select>
+          <div className="relative w-full sm:w-auto">
+             <CategorySearchDropdown 
+                categories={categories}
+                selectedId={selectedCategory}
+                onSelect={handleCategoryChange}
+             />
           </div>
         </CardContent>
       </Card>

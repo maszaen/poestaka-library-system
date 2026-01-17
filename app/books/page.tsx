@@ -5,11 +5,11 @@ import { AddBookDialog } from "./add-book-dialog";
 
 export const dynamic = "force-dynamic";
 
-export default async function BooksPage({
-  searchParams,
-}: {
-  searchParams: { search?: string; category?: string };
+export default async function BooksPage(props: {
+  searchParams: Promise<{ search?: string; category?: string }>;
 }) {
+  const searchParams = await props.searchParams;
+
   const [books, categories] = await Promise.all([
     getBooks({ 
       search: searchParams.search, 

@@ -81,7 +81,7 @@ export default async function DashboardPage() {
       />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
         {statCards.map((stat) => (
           <Card key={stat.title} className="relative overflow-hidden">
             <CardContent className="p-6">
@@ -121,7 +121,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Main Content Grid */}
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
+      <div className="mt-8 grid gap-4 lg:grid-cols-2">
         
         {/* Active Loans Table */}
         <Card>

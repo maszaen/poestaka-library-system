@@ -60,7 +60,7 @@ export default function RootLayout({
               isCollapsed ? "lg:ml-16" : "lg:ml-[320px]"
             )}
           >
-            <div className="min-h-screen p-4 lg:p-8 max-w-5xl mx-auto">
+            <div className="min-h-screen p-4 lg:p-8 max-w-7xl mx-auto">
               <BorrowFormProvider>
                 {children}
               </BorrowFormProvider>

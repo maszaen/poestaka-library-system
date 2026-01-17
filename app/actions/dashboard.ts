@@ -46,3 +46,37 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     };
   }
 }
+
+export interface PopularBook {
+  judul: string;
+  penulis: string;
+  total_peminjaman: number;
+}
+
+export async function getPopularBooks(): Promise<PopularBook[]> {
+  try {
+    interface PopularBookRow extends RowDataPacket {
+      judul: string;
+      penulis: string;
+      total_peminjaman: number;
+    }
+
+    const books = await query<PopularBookRow[]>(`
+      SELECT 
+        b.judul,
+        b.penulis,
+        COUNT(dp.id_detail) as total_peminjaman
+      FROM detail_peminjaman dp
+      JOIN item_buku ib ON dp.id_item = ib.id_item
+      JOIN buku b ON ib.id_buku = b.id_buku
+      GROUP BY b.id_buku, b.judul, b.penulis
+      ORDER BY total_peminjaman DESC
+      LIMIT 5
+    `);
+
+    return books;
+  } catch (error) {
+    console.error('Error fetching popular books:', error);
+    return [];
+  }
+}

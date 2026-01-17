@@ -1,4 +1,4 @@
-import { getDashboardStats } from "@/app/actions/dashboard";
+import { getDashboardStats, getPopularBooks } from "@/app/actions/dashboard";
 import { getActiveLoans } from "@/app/actions/circulation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,7 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const stats = await getDashboardStats();
   const activeLoans = await getActiveLoans();
+  const popularBooks = await getPopularBooks();
 
   const statCards = [
     {
@@ -103,77 +104,116 @@ export default async function DashboardPage() {
         </Card>
       )}
 
-      {/* Active Loans Table */}
-      <Card className="mt-8">
-        <CardContent className="p-6">
-          <h2 className="mb-4 text-lg font-semibold text-[#111827]">
-            Peminjaman Aktif
-          </h2>
-          
-          {activeLoans.length === 0 ? (
-            <div className="py-12 text-center">
-              <ArrowLeftRight className="mx-auto h-12 w-12 text-gray-300" />
-              <p className="mt-4 text-sm text-[#4B5563]">
-                Tidak ada peminjaman aktif saat ini
-              </p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>No. Peminjaman</TableHead>
-                  <TableHead>Anggota</TableHead>
-                  <TableHead>Judul Buku</TableHead>
-                  <TableHead>ID Item</TableHead>
-                  <TableHead>Batas Kembali</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {activeLoans.slice(0, 10).map((loan) => {
-                  const daysLate = loan.batas_kembali
-                    ? calculateLateDays(loan.batas_kembali)
-                    : 0;
-                  const isOverdue = daysLate > 0;
+      {/* Main Content Grid */}
+      <div className="mt-8 grid gap-8 lg:grid-cols-2">
+        
+        {/* Active Loans Table */}
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="mb-4 text-lg font-semibold text-[#111827]">
+              Peminjaman Aktif
+            </h2>
+            
+            {activeLoans.length === 0 ? (
+              <div className="py-12 text-center">
+                <ArrowLeftRight className="mx-auto h-12 w-12 text-gray-300" />
+                <p className="mt-4 text-sm text-[#4B5563]">
+                  Tidak ada peminjaman aktif saat ini
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Anggota</TableHead>
+                    <TableHead>Judul Buku</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {activeLoans.slice(0, 5).map((loan) => {
+                    const daysLate = loan.batas_kembali
+                      ? calculateLateDays(loan.batas_kembali)
+                      : 0;
+                    const isOverdue = daysLate > 0;
 
-                  return (
-                    <TableRow key={loan.id_detail}>
-                      <TableCell className="font-mono text-sm">
-                        {loan.no_peminjaman}
-                      </TableCell>
-                      <TableCell>{loan.nama_lengkap}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">
-                        {loan.judul}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {loan.id_item}
-                      </TableCell>
+                    return (
+                      <TableRow key={loan.id_detail}>
+                        <TableCell className="font-medium">
+                          <div className="flex flex-col">
+                            <span>{loan.nama_lengkap}</span>
+                            <span className="text-xs text-gray-500 font-mono">{loan.no_peminjaman}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate">
+                          {loan.judul}
+                        </TableCell>
+                        <TableCell>
+                          {isOverdue ? (
+                            <Badge variant="danger" className="whitespace-nowrap">
+                              Telat {daysLate} hari
+                            </Badge>
+                          ) : (
+                            <Badge variant="info">Dipinjam</Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+            
+            {activeLoans.length > 5 && (
+              <p className="mt-4 text-center text-sm text-[#4B5563]">
+                + {activeLoans.length - 5} lainnya
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Popular Books */}
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="mb-4 text-lg font-semibold text-[#111827]">
+              Buku Terpopuler
+            </h2>
+            
+            {popularBooks.length === 0 ? (
+              <div className="py-12 text-center">
+                <BookOpen className="mx-auto h-12 w-12 text-gray-300" />
+                <p className="mt-4 text-sm text-[#4B5563]">
+                  Belum ada data peminjaman
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Judul Buku</TableHead>
+                    <TableHead className="text-right">Total Pinjam</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {popularBooks.map((book, index) => (
+                    <TableRow key={index}>
                       <TableCell>
-                        {formatDate(loan.batas_kembali)}
+                        <div className="font-medium">{book.judul}</div>
+                        <div className="text-xs text-gray-500">{book.penulis}</div>
                       </TableCell>
-                      <TableCell>
-                        {isOverdue ? (
-                          <Badge variant="danger">
-                            Terlambat {daysLate} hari
-                          </Badge>
-                        ) : (
-                          <Badge variant="info">Dipinjam</Badge>
-                        )}
+                      <TableCell className="text-right">
+                        <Badge variant="secondary">
+                          {book.total_peminjaman}x
+                        </Badge>
                       </TableCell>
                     </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-          
-          {activeLoans.length > 10 && (
-            <p className="mt-4 text-center text-sm text-[#4B5563]">
-              Menampilkan 10 dari {activeLoans.length} peminjaman aktif
-            </p>
-          )}
-        </CardContent>
-      </Card>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </>
   );
 }

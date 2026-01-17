@@ -5,9 +5,16 @@ import { AddBookDialog } from "./add-book-dialog";
 
 export const dynamic = "force-dynamic";
 
-export default async function BooksPage() {
+export default async function BooksPage({
+  searchParams,
+}: {
+  searchParams: { search?: string; category?: string };
+}) {
   const [books, categories] = await Promise.all([
-    getBooks(),
+    getBooks({ 
+      search: searchParams.search, 
+      categoryId: searchParams.category 
+    }),
     getCategories(),
   ]);
 
@@ -20,7 +27,7 @@ export default async function BooksPage() {
         <AddBookDialog categories={categories} />
       </PageHeader>
 
-      <BooksTable books={books} />
+      <BooksTable books={books} categories={categories} />
     </>
   );
 }

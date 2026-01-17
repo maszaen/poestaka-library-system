@@ -8,9 +8,12 @@ interface BookRow extends RowDataPacket, BukuWithKategori {}
 interface ItemRow extends RowDataPacket, ItemBuku {}
 interface KategoriRow extends RowDataPacket, Kategori {}
 
-export async function getBooks(): Promise<BukuWithKategori[]> {
+export async function getBooks(filters?: {
+  search?: string;
+  categoryId?: string;
+}): Promise<BukuWithKategori[]> {
   try {
-    const books = await query<BookRow[]>(`
+    let sql = `
       SELECT 
         b.id_buku,
         b.judul,
@@ -23,8 +26,25 @@ export async function getBooks(): Promise<BukuWithKategori[]> {
         k.rak_lokasi
       FROM buku b
       LEFT JOIN kategori k ON b.id_kategori = k.id_kategori
-      ORDER BY b.judul ASC
-    `);
+      WHERE 1=1
+    `;
+    
+    const params: (string | number)[] = [];
+
+    if (filters?.search) {
+      const searchPattern = `%${filters.search.trim()}%`;
+      sql += ` AND (b.judul LIKE ? OR b.penulis LIKE ? OR b.isbn LIKE ?)`;
+      params.push(searchPattern, searchPattern, searchPattern);
+    }
+
+    if (filters?.categoryId && filters.categoryId !== 'all') {
+      sql += ` AND b.id_kategori = ?`;
+      params.push(Number(filters.categoryId));
+    }
+
+    sql += ` ORDER BY b.judul ASC`;
+
+    const books = await query<BookRow[]>(sql, params);
     return books;
   } catch (error) {
     console.error('Error fetching books:', error);

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { BukuWithKategori, ItemBuku } from "@/lib/types";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { BukuWithKategori, ItemBuku, Kategori } from "@/lib/types";
 import { getBookItems } from "@/app/actions/books";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,25 +23,55 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BookOpen, Eye, Search, Package } from "lucide-react";
+import { BookOpen, Eye, Search, Package, Filter } from "lucide-react";
 
 interface BooksTableProps {
   books: BukuWithKategori[];
+  categories: Kategori[];
 }
 
-export function BooksTable({ books }: BooksTableProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+export function BooksTable({ books, categories }: BooksTableProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "all");
+  
   const [selectedBook, setSelectedBook] = useState<BukuWithKategori | null>(null);
   const [bookItems, setBookItems] = useState<ItemBuku[]>([]);
   const [isLoadingItems, setIsLoadingItems] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const filteredBooks = books.filter(
-    (book) =>
-      book.judul.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.penulis?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.nama_kategori?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Debounced search update
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      
+      if (searchQuery) {
+        params.set("search", searchQuery);
+      } else {
+        params.delete("search");
+      }
+      
+      router.push(`/books?${params.toString()}`);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, router]); // Intentionally omitting searchParams to avoid loop if possible, but params update triggers fetch
+
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value);
+    const params = new URLSearchParams(searchParams.toString());
+    if (value && value !== "all") {
+      params.set("category", value);
+    } else {
+      params.delete("category");
+    }
+    router.push(`/books?${params.toString()}`);
+  };
+
+  // We use books directly as they are already filtered by the server
+  const filteredBooks = books;
 
   const handleViewStock = async (book: BukuWithKategori) => {
     setSelectedBook(book);
@@ -88,17 +119,34 @@ export function BooksTable({ books }: BooksTableProps) {
 
   return (
     <>
-      {/* Search Bar */}
+      {/* Search and Filter */}
       <Card className="mb-6">
-        <CardContent className="p-1">
-          <div className="relative">
+        <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input
-              placeholder="Cari judul, penulis, atau kategori..."
+              placeholder="Cari judul, penulis, atau ISBN..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
+          </div>
+          <div className="relative">
+             <div className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 pointer-events-none z-10">
+                <Filter className="h-4 w-4" />
+             </div>
+             <select 
+                value={selectedCategory}
+                onChange={(e) => handleCategoryChange(e.target.value)}
+                className="h-10 w-full sm:w-[200px] rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
+             >
+                <option value="all">Semua Kategori</option>
+                {categories.map((cat) => (
+                   <option key={cat.id_kategori} value={cat.id_kategori}>
+                      {cat.nama_kategori}
+                   </option>
+                ))}
+             </select>
           </div>
         </CardContent>
       </Card>

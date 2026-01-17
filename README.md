@@ -28,6 +28,7 @@
 | Database | MySQL 8.0 + mysql2/promise |
 | UI Components | Radix UI (Dialog, Tabs) |
 | Architecture | Server Components + Server Actions |
+| Containerization | Docker + Docker Compose |
 
 ## 📁 Project Structure
 
@@ -65,13 +66,68 @@ poestaka-library-system/
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### 🐳 Option 1: Docker (Recommended)
 
-- Node.js 18+
+Cara paling mudah untuk menjalankan aplikasi ini adalah menggunakan Docker.
+
+#### Quick Start (Tanpa Clone Repo)
+
+```bash
+# Buat folder dan masuk
+mkdir poestaka && cd poestaka
+
+# Download file yang diperlukan
+curl -O https://raw.githubusercontent.com/maszaen/poestaka-library-system/main/docker-compose.public.yml
+mkdir database
+curl -o database/setup.sql https://raw.githubusercontent.com/maszaen/poestaka-library-system/main/database/setup.sql
+
+# Jalankan
+docker compose -f docker-compose.public.yml up -d
+```
+
+Buka [http://localhost:3000](http://localhost:3000)
+
+#### Dengan Clone Repo
+
+```bash
+git clone https://github.com/maszaen/poestaka-library-system.git
+cd poestaka-library-system
+docker compose up -d
+```
+
+#### Docker Commands
+
+```bash
+# Start containers
+docker compose up -d
+
+# Stop containers
+docker compose down
+
+# Reset database (hapus semua data, seed ulang)
+docker compose down -v && docker compose up -d
+
+# Lihat logs
+docker compose logs -f
+```
+
+#### Docker Hub Image
+
+```bash
+docker pull exqeon/poestaka:latest
+```
+
+---
+
+### 💻 Option 2: Manual Setup
+
+#### Prerequisites
+
+- Node.js 20+
 - MySQL 8.0+
 - npm
 
-### 1. Clone & Install
+#### 1. Clone & Install
 
 ```bash
 git clone https://github.com/maszaen/poestaka-library-system.git
@@ -79,7 +135,7 @@ cd poestaka-library-system
 npm install
 ```
 
-### 2. Setup Database
+#### 2. Setup Database
 
 Buat database dan jalankan script setup:
 
@@ -88,7 +144,7 @@ mysql -u root -p -e "CREATE DATABASE poestaka_db"
 mysql -u root -p poestaka_db < database/setup.sql
 ```
 
-### 3. Configure Environment
+#### 3. Configure Environment
 
 Buat file `.env.local`:
 
@@ -100,7 +156,7 @@ DB_NAME=poestaka_db
 FINE_PER_DAY=2000
 ```
 
-### 4. Run Development Server
+#### 4. Run Development Server
 
 ```bash
 npm run dev

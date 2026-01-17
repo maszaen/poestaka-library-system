@@ -1,0 +1,49 @@
+# Poestaka Library System - Public Docker Compose
+# ================================================
+# File ini untuk pengguna yang ingin langsung run tanpa clone repo.
+#
+# Cara Pakai:
+# 1. Download file ini saja
+# 2. Download file setup.sql dari: https://raw.githubusercontent.com/maszaen/poestaka-library-system/main/database/setup.sql
+# 3. Taruh setup.sql di folder "database/" (buat folder jika belum ada)
+# 4. Jalankan: docker compose -f docker-compose.public.yml up -d
+# 5. Buka browser: http://localhost:3000
+#
+# Reset database: docker compose -f docker-compose.public.yml down -v && docker compose -f docker-compose.public.yml up -d
+
+services:
+  app:
+    image: exqeon/poestaka:latest
+    container_name: poestaka_app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=poestaka_password
+      - DB_NAME=poestaka_db
+      - FINE_PER_DAY=2000
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    container_name: poestaka_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: poestaka_password
+      MYSQL_DATABASE: poestaka_db
+    ports:
+      - "3308:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+volumes:
+  db_data:

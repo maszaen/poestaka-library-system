@@ -56,7 +56,7 @@ export default function RootLayout({
               // Mobile: full width with top padding for header
               "pt-14 lg:pt-0",
               // Desktop: margin for sidebar
-              isCollapsed ? "lg:ml-20" : "lg:ml-64"
+              isCollapsed ? "lg:ml-16" : "lg:ml-[320px]"
             )}
           >
             <div className="min-h-screen p-4 lg:p-8 max-w-5xl mx-auto">

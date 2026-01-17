@@ -1,23 +1,26 @@
 import mysql from 'mysql2/promise';
 
-// Singleton connection pool
-let pool: mysql.Pool | null = null;
+// Extend global type for development hot reload
+const globalForDb = globalThis as unknown as {
+  mysqlPool: mysql.Pool | undefined;
+};
 
-export function getPool(): mysql.Pool {
-  if (!pool) {
-    pool = mysql.createPool({
+// Singleton connection pool - persists across hot reloads in development
+function getPool(): mysql.Pool {
+  if (!globalForDb.mysqlPool) {
+    globalForDb.mysqlPool = mysql.createPool({
       host: process.env.DB_HOST || 'localhost',
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'poestaka',
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 5,
       queueLimit: 0,
       enableKeepAlive: true,
       keepAliveInitialDelay: 0,
     });
   }
-  return pool;
+  return globalForDb.mysqlPool;
 }
 
 // Execute a query with parameters
@@ -35,8 +38,8 @@ export async function getConnection(): Promise<mysql.PoolConnection> {
 
 // Close the pool (for graceful shutdown)
 export async function closePool(): Promise<void> {
-  if (pool) {
-    await pool.end();
-    pool = null;
+  if (globalForDb.mysqlPool) {
+    await globalForDb.mysqlPool.end();
+    globalForDb.mysqlPool = undefined;
   }
 }

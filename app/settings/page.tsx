@@ -2,7 +2,8 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Database, Server, DollarSign, Save } from "lucide-react";
+import { Database, Server, CalendarClock, Save } from "lucide-react";
+import { DataManagementCard } from "./data-management-card";
 
 export default function SettingsPage() {
   return (
@@ -53,7 +54,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
+              <CalendarClock className="h-5 w-5" />
               Pengaturan Peminjaman
             </CardTitle>
             <CardDescription>
@@ -80,7 +81,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* System Info */}
-        <Card className="lg:col-span-2">
+        {/* <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Server className="h-5 w-5" />
@@ -98,7 +99,7 @@ export default function SettingsPage() {
               </div>
               <div className="rounded-md border border-[#E5E7EB] p-4">
                 <p className="text-xs text-[#4B5563]">Framework</p>
-                <p className="mt-1 text-lg font-semibold">Next.js 16</p>
+                <p className="mt-1 text-lg font-semibold">Next.js 15</p>
               </div>
               <div className="rounded-md border border-[#E5E7EB] p-4">
                 <p className="text-xs text-[#4B5563]">Database</p>
@@ -106,7 +107,12 @@ export default function SettingsPage() {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
+
+        {/* Data Management (Reset/Seed) */}
+        <div className="lg:col-span-2">
+           <DataManagementCard />
+        </div>
       </div>
     </>
   );

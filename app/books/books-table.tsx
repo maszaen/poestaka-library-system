@@ -13,7 +13,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -65,8 +64,6 @@ export function BooksTable({ books }: BooksTableProps) {
         return <Badge variant="success">Tersedia</Badge>;
       case "Dipinjam":
         return <Badge variant="info">Dipinjam</Badge>;
-      case "Rusak":
-        return <Badge variant="danger">Rusak</Badge>;
       case "Perbaikan":
         return <Badge variant="warning">Perbaikan</Badge>;
       case "Hilang":

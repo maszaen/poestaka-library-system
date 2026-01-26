@@ -181,3 +181,40 @@ export async function updateMember(
     return { success: false, error: 'Gagal mengupdate anggota' };
   }
 }
+
+// Check if member has active loans
+export async function checkMemberHasActiveLoans(id: number): Promise<boolean> {
+  try {
+    const result = await query<{ count: number }[]>(`
+      SELECT COUNT(*) as count
+      FROM detail_peminjaman dp
+      JOIN peminjaman p ON dp.no_peminjaman = p.no_peminjaman
+      WHERE p.id_anggota = ? AND dp.status_kembali = 'Pinjam'
+    `, [id]);
+    return (result[0]?.count ?? 0) > 0;
+  } catch (error) {
+    console.error('Error checking active loans:', error);
+    return true; // Return true to be safe (prevent deletion)
+  }
+}
+
+// Delete member (only if no active loans)
+export async function deleteMember(id: number): Promise<ActionResult> {
+  try {
+    // Check for active loans first
+    const hasActiveLoans = await checkMemberHasActiveLoans(id);
+    if (hasActiveLoans) {
+      return { 
+        success: false, 
+        error: 'Tidak dapat menghapus anggota yang sedang meminjam buku' 
+      };
+    }
+
+    // Delete the member
+    await query(`DELETE FROM anggota WHERE id_anggota = ?`, [id]);
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting member:', error);
+    return { success: false, error: 'Gagal menghapus anggota' };
+  }
+}
